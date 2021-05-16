@@ -3,17 +3,20 @@ SHELL := /bin/bash -o pipefail -o errexit
 # Tempalte settings
 VMID := 777
 # Targets:
-#	loki - python3.6 + tensorflow 1.last
-# 	odin - python3.7 + tensorflow 2.last
-# 	thor - python3.7 + torch last + torchvision last
+#	asgard - python3.6 + tensorflow 1.last
+# 	midgard - python3.7 + tensorflow 2.last
+# 	helheim - python3.7 + torch last + torchvision last
 TARGET := none
+BASE_TEMPLATE="/var/lib/vz/template/cache/ubuntu-20.04-standard_20.04-1-base_amd64.tar.gz"
 TEMPLATE := "/var/lib/vz/template/cache/ubuntu-20.04-standard_20.04-1-${TARGET}_amd64.tar.gz"
-BASE_REQUIREMENTS := "requirements/base.sh"
-TARGET_REQUIREMENTS := "requirements/${TARGET}.sh"
+BASE_REQUIREMENTS := "scripts/base.sh"
+TARGET_REQUIREMENTS := "scripts/${TARGET}.sh"
+TARGET_INSTALLATION := "scripts/target.sh"
+USER_NAME := valkyrja
 USER_PASSWORD := ""
 
 # Container settings
-BASE_TEMPLATE="local:vztmpl/ubuntu-20.04-standard_20.04-1_amd64.tar.gz"
+UBUNTU_TEMPLATE="local:vztmpl/ubuntu-20.04-standard_20.04-1_amd64.tar.gz"
 ARCH := amd64
 OS_TYPE := ubuntu
 ROOTFS_SIZE := 50
@@ -22,7 +25,7 @@ MEMORY := 4096
 SWAP := 4096
 NET := "name=eth0,bridge=vmbr1,firewall=1,gw=192.168.10.1,ip=192.168.10.123/24,type=veth"
 FEATURES := "keyctl=1,nesting=1"
-HOSTNAME := lxc-template-creation-${TARGET}
+HOSTNAME := lxc-template-creation
 ROOT_PASSWORD := "password"
 
 
@@ -41,8 +44,8 @@ define create_container
 		--rootfs local-lvm:${ROOTFS_SIZE} \
 		--password ${ROOT_PASSWORD} \
 		--onboot 1 \
-		--unprivileged 1
-	pct start ${1}
+		--unprivileged 1 \
+		--start
 endef
 
 define create_template
@@ -54,26 +57,24 @@ define create_template
 	pct set ${1} --delete net0
 
 	# Create template
+	# TODO: stdout is very slow for large templates. Find way to copy the auto-generated backup
 	vzdump ${1} --compress gzip --stdout 1 > ${2}
 	pct destroy ${1}
 	echo "Template ${2} created"
 endef
 
-define install_requirements
-	# ${1} - vmid
-	# ${2} - path to requirements script
-	# ${3} - script args
+build-base-template:
+	$(call create_container,${VMID},${UBUNTU_TEMPLATE})
+	pct push ${VMID} ${BASE_REQUIREMENTS} /root/base_requirements.sh 
+	pct exec ${VMID} -- sh /root/base_requirements.sh ${USER_NAME} ${USER_PASSWORD}
+	$(call create_template,${VMID},${BASE_TEMPLATE})
 
-	# Install requirements
-	pct push ${1} ${2} /install_requirements.sh 
-	pct exec ${1} -- sh install_requirements.sh ${3}
-	pct exec ${1} -- rm install_requirements.sh
-endef
-
-build-template:
+build-target-template:
 	$(call create_container,${VMID},${BASE_TEMPLATE})
-	$(call install_requirements,${VMID},${BASE_REQUIREMENTS},${USER_PASSWORD})
-	$(call install_requirements,${VMID},${TARGET_REQUIREMENTS})
+	# Install requirements
+	pct push ${VMID} ${TARGET_INSTALLATION} /root/target_installation.sh 
+	pct push ${VMID} ${TARGET_REQUIREMENTS} /root/target_requirements.sh 
+	pct exec ${VMID} -- sh /root/target_installation.sh ${USER_NAME}
 	$(call create_template,${VMID},${TEMPLATE})
 
 create-container:
