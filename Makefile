@@ -8,8 +8,9 @@ VMID := 777
 # 	thor - python3.7 + torch last + torchvision last
 TARGET := none
 TEMPLATE := "/var/lib/vz/template/cache/ubuntu-20.04-standard_20.04-1-${TARGET}_amd64.tar.gz"
-BASE_REQUIREMENTS := "requirements/requirements_base.sh"
-TARGET_REQUIREMENTS := "requirements/requirements_${TARGET}.sh"
+BASE_REQUIREMENTS := "requirements/base.sh"
+TARGET_REQUIREMENTS := "requirements/${TARGET}.sh"
+USER_PASSWORD := ""
 
 # Container settings
 BASE_TEMPLATE="local:vztmpl/ubuntu-20.04-standard_20.04-1_amd64.tar.gz"
@@ -22,6 +23,7 @@ SWAP := 4096
 NET := "name=eth0,bridge=vmbr1,firewall=1,gw=192.168.10.1,ip=192.168.10.123/24,type=veth"
 FEATURES := "keyctl=1,nesting=1"
 HOSTNAME := lxc-template-creation-${TARGET}
+ROOT_PASSWORD := "password"
 
 
 define create_container
@@ -37,6 +39,7 @@ define create_container
 		--features ${FEATURES} \
 		--hostname ${HOSTNAME} \
 		--rootfs local-lvm:${ROOTFS_SIZE} \
+		--password ${ROOT_PASSWORD} \
 		--onboot 1 \
 		--unprivileged 1
 	pct start ${1}
@@ -59,16 +62,17 @@ endef
 define install_requirements
 	# ${1} - vmid
 	# ${2} - path to requirements script
+	# ${3} - script args
 
 	# Install requirements
-	pct push ${1} ${2} /install_requirements.sh
-	pct exec ${1} -- sh install_requirements.sh 
+	pct push ${1} ${2} /install_requirements.sh 
+	pct exec ${1} -- sh install_requirements.sh ${3}
 	pct exec ${1} -- rm install_requirements.sh
 endef
 
 build-template:
 	$(call create_container,${VMID},${BASE_TEMPLATE})
-	$(call install_requirements,${VMID},${BASE_REQUIREMENTS})
+	$(call install_requirements,${VMID},${BASE_REQUIREMENTS},${USER_PASSWORD})
 	$(call install_requirements,${VMID},${TARGET_REQUIREMENTS})
 	$(call create_template,${VMID},${TEMPLATE})
 
