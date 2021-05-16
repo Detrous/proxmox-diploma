@@ -19,7 +19,7 @@ ROOTFS_SIZE := 50
 CORES := 4
 MEMORY := 4096
 SWAP := 4096
-NET := "name=eth0,bridge=vmbr1,firewall=1,gw=192.168.10.1,ip=dhcp,type=veth"
+NET := "name=eth0,bridge=vmbr1,firewall=1,gw=192.168.10.1,ip=192.168.10.123/24,type=veth"
 FEATURES := "keyctl=1,nesting=1"
 HOSTNAME := lxc-template-creation-${TARGET}
 
