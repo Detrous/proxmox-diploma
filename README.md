@@ -19,17 +19,13 @@ Creates new user with the specified password, installs miniconda and adds script
 ~/scripts/add_user.sh "username" "password"
 ```
 ### User scripts
-* ~/scripts/miniconda/env/asgard.sh - install [asgard](#asgard) miniconda environment
+* ~/scripts/miniconda/env/install_env.sh <env_name> - install selected miniconda environment
     ```bash
-    ~/scripts/miniconda/env/asgard.sh
-    ```
-* ~/scripts/miniconda/env/helheim.sh - install [helheim](#helheim) miniconda environment
-    ```bash
-    ~/scripts/miniconda/env/helheim.sh
-    ```
-* ~/scripts/miniconda/env/midgard.sh - install [midgard](#midgard) miniconda environment
-    ```bash
-    ~/scripts/miniconda/env/midgard.sh
+    ~/scripts/miniconda/install_env.sh asgard
+
+    ~/scripts/miniconda/install_env.sh helheim
+
+    ~/scripts/miniconda/install_env.sh midgard
     ```
 
 # Miniconda environments
